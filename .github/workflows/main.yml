@@ -18,6 +18,9 @@ jobs:
           distribution: 'temurin'
           cache: gradle
 
+      - name: Install ImageMagick and SVG support
+        run: sudo apt-get update && sudo apt-get install -y imagemagick librsvg2-bin
+
       - name: Remove leftover launcher XMLs from mipmap folders
         run: |
           find app/src/main/res/mipmap-hdpi \
@@ -27,6 +30,27 @@ jobs:
                app/src/main/res/mipmap-xxxhdpi \
                -name "*.xml" -delete
           echo "Cleaned up old XML icons"
+
+      - name: Generate launcher icons
+        run: |
+          SOURCE="ic_launcher_source_square.svg"
+          RES="app/src/main/res"
+          
+          mkdir -p $RES/mipmap-{mdpi,hdpi,xhdpi,xxhdpi,xxxhdpi}
+          
+          # Генерация стандартных иконок (квадратных)
+          convert -background none $SOURCE -resize 48x48 $RES/mipmap-mdpi/ic_launcher.png
+          convert -background none $SOURCE -resize 72x72 $RES/mipmap-hdpi/ic_launcher.png
+          convert -background none $SOURCE -resize 96x96 $RES/mipmap-xhdpi/ic_launcher.png
+          convert -background none $SOURCE -resize 144x144 $RES/mipmap-xxhdpi/ic_launcher.png
+          convert -background none $SOURCE -resize 192x192 $RES/mipmap-xxxhdpi/ic_launcher.png
+          
+          # Генерация круглых иконок
+          convert -background none $SOURCE -resize 48x48 $RES/mipmap-mdpi/ic_launcher_round.png
+          convert -background none $SOURCE -resize 72x72 $RES/mipmap-hdpi/ic_launcher_round.png
+          convert -background none $SOURCE -resize 96x96 $RES/mipmap-xhdpi/ic_launcher_round.png
+          convert -background none $SOURCE -resize 144x144 $RES/mipmap-xxhdpi/ic_launcher_round.png
+          convert -background none $SOURCE -resize 192x192 $RES/mipmap-xxxhdpi/ic_launcher_round.png
 
       - run: chmod +x ./gradlew
 
