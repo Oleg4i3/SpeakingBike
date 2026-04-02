@@ -380,6 +380,9 @@ public class SpeedometerService extends Service {
         if (!ttsReady || tts == null) return;
         if (state == TrackState.PAUSED) return;
 
+        // Prevent the audio from re-triggering the torch callback
+        lastTorchMs = System.currentTimeMillis();
+
         PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
         boolean screenOff = pm != null && !pm.isInteractive();
 
@@ -387,7 +390,7 @@ public class SpeedometerService extends Service {
             audioEnhancer.speak(text, null);
         } else {
             Bundle params = new Bundle();
-            params.putInt(TextToSpeech.Engine.KEY_PARAM_STREAM, AudioManager.STREAM_ALARM);
+            params.putInt(TextToSpeech.Engine.KEY_PARAM_STREAM, AudioManager.STREAM_MUSIC);
             tts.speak(text, TextToSpeech.QUEUE_FLUSH, params, "sb");
         }
     }
