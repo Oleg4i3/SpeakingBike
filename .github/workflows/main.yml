@@ -18,6 +18,16 @@ jobs:
           distribution: 'temurin'
           cache: gradle
 
+      - name: Remove leftover launcher XMLs from mipmap folders
+        run: |
+          find app/src/main/res/mipmap-hdpi \
+               app/src/main/res/mipmap-mdpi \
+               app/src/main/res/mipmap-xhdpi \
+               app/src/main/res/mipmap-xxhdpi \
+               app/src/main/res/mipmap-xxxhdpi \
+               -name "*.xml" -delete
+          echo "Cleaned up old XML icons"
+
       - run: chmod +x ./gradlew
 
       - run: ./gradlew assembleDebug --no-daemon
