@@ -18,40 +18,42 @@ jobs:
           distribution: 'temurin'
           cache: gradle
 
-      - name: Install ImageMagick and SVG support
-        run: sudo apt-get update && sudo apt-get install -y imagemagick librsvg2-bin
+      - name: Install SVG Rendering Tools
+        run: sudo apt-get update && sudo apt-get install -y librsvg2-bin
 
       - name: Clean up ALL old icons
         run: |
-          # Удаляем XML-файлы иконок, которые мешают отображению PNG
           find app/src/main/res/mipmap-* -name "ic_launcher*.xml" -delete
-          # Удаляем папку с адаптивными иконками (она имеет высший приоритет)
           rm -rf app/src/main/res/mipmap-anydpi-v26
           echo "Old icons removed"
 
-      - name: Generate launcher icons
+      - name: Generate launcher icons (High Precision)
         run: |
           SOURCE="ic_launcher_source_square.svg"
           RES="app/src/main/res"
           
           mkdir -p $RES/mipmap-{mdpi,hdpi,xhdpi,xxhdpi,xxxhdpi}
           
-          # Генерация стандартных иконок
-          convert -background none $SOURCE -resize 48x48 $RES/mipmap-mdpi/ic_launcher.png
-          convert -background none $SOURCE -resize 72x72 $RES/mipmap-hdpi/ic_launcher.png
-          convert -background none $SOURCE -resize 96x96 $RES/mipmap-xhdpi/ic_launcher.png
-          convert -background none $SOURCE -resize 144x144 $RES/mipmap-xxhdpi/ic_launcher.png
-          convert -background none $SOURCE -resize 192x192 $RES/mipmap-xxxhdpi/ic_launcher.png
+          # Функция для точного рендеринга через rsvg
+          render_icon() {
+            rsvg-convert -w $1 -h $1 -f png -o $2 $SOURCE
+          }
+
+          # Генерация всех размеров с сохранением качества оригинала
+          render_icon 48  $RES/mipmap-mdpi/ic_launcher.png
+          render_icon 72  $RES/mipmap-hdpi/ic_launcher.png
+          render_icon 96  $RES/mipmap-xhdpi/ic_launcher.png
+          render_icon 144 $RES/mipmap-xxhdpi/ic_launcher.png
+          render_icon 192 $RES/mipmap-xxxhdpi/ic_launcher.png
           
-          # Генерация круглых иконок
-          convert -background none $SOURCE -resize 48x48 $RES/mipmap-mdpi/ic_launcher_round.png
-          convert -background none $SOURCE -resize 72x72 $RES/mipmap-hdpi/ic_launcher_round.png
-          convert -background none $SOURCE -resize 96x96 $RES/mipmap-xhdpi/ic_launcher_round.png
-          convert -background none $SOURCE -resize 144x144 $RES/mipmap-xxhdpi/ic_launcher_round.png
-          convert -background none $SOURCE -resize 192x192 $RES/mipmap-xxxhdpi/ic_launcher_round.png
+          # Дублируем для круглых иконок (система сама применит маску, если нужно)
+          cp $RES/mipmap-mdpi/ic_launcher.png    $RES/mipmap-mdpi/ic_launcher_round.png
+          cp $RES/mipmap-hdpi/ic_launcher.png    $RES/mipmap-hdpi/ic_launcher_round.png
+          cp $RES/mipmap-xhdpi/ic_launcher.png   $RES/mipmap-xhdpi/ic_launcher_round.png
+          cp $RES/mipmap-xxhdpi/ic_launcher.png  $RES/mipmap-xxhdpi/ic_launcher_round.png
+          cp $RES/mipmap-xxxhdpi/ic_launcher.png $RES/mipmap-xxxhdpi/ic_launcher_round.png
 
       - run: chmod +x ./gradlew
-
       - run: ./gradlew assembleDebug --no-daemon
 
       - uses: actions/upload-artifact@v4
