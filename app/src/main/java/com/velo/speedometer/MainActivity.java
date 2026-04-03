@@ -6,6 +6,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.view.KeyEvent;
@@ -26,7 +27,8 @@ import java.util.Locale;
 public class MainActivity extends AppCompatActivity
         implements SpeedometerService.SpeedListener {
 
-    private static final int PERM = 100;
+    private static final int PERM       = 100;
+    private static final int PERM_NOTIF = 101;
 
     private TextView       tvSpeed, tvStats, tvPauseLabel;
     private MaterialButton btnStart, btnPause, btnStop;
@@ -159,9 +161,25 @@ public class MainActivity extends AppCompatActivity
     }
 
     private void checkPermission() {
-        if (hasPermission()) bindService();
-        else ActivityCompat.requestPermissions(this,
-                new String[]{ Manifest.permission.ACCESS_FINE_LOCATION }, PERM);
+        if (hasPermission()) {
+            bindService();
+            requestNotifPermission();
+        } else {
+            ActivityCompat.requestPermissions(this,
+                    new String[]{ Manifest.permission.ACCESS_FINE_LOCATION }, PERM);
+        }
+    }
+
+    private void requestNotifPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(this,
+                    Manifest.permission.POST_NOTIFICATIONS)
+                    != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(this,
+                        new String[]{ Manifest.permission.POST_NOTIFICATIONS },
+                        PERM_NOTIF);
+            }
+        }
     }
 
     @Override
@@ -169,6 +187,10 @@ public class MainActivity extends AppCompatActivity
             @NonNull String[] p, @NonNull int[] r) {
         super.onRequestPermissionsResult(code, p, r);
         if (code == PERM && r.length > 0
-                && r[0] == PackageManager.PERMISSION_GRANTED) bindService();
+                && r[0] == PackageManager.PERMISSION_GRANTED) {
+            bindService();
+            requestNotifPermission();
+        }
+        // PERM_NOTIF — система сама разблокирует канал после согласия
     }
 }

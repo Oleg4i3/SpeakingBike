@@ -64,6 +64,9 @@ public class SpeedometerService extends Service {
     private TextToSpeech  tts;
     private AudioEnhancer audioEnhancer;
 
+    // "uk" | "ru" | "en"
+    private String lang = "en";
+
     private SpeedCalculator calculator;
     private Handler         handler;
     private Runnable        avgRunnable;
@@ -144,7 +147,7 @@ public class SpeedometerService extends Service {
         registerTorchListener();
         if (screenAnnounceEnabled) registerScreenReceiver();
         if (doAnnounceAvg) scheduleAvgTimer();
-        speak("Ride started");
+        speak(str("Let's go", "Поїхали", "Погнали"));
     }
 
     public void stopTracking() {
@@ -160,7 +163,8 @@ public class SpeedometerService extends Service {
 
         if (listener != null)
             listener.onSpeedUpdate(0, 0, calculator.getTotalDistanceKm());
-        speak("Ride stopped. Distance " + fmtDist(calculator.getTotalDistanceKm()));
+        speak(str("Ride stopped. Distance ", "Приїхали. Дистанція ", "Приехали. Дистанция ")
+                + fmtDist(calculator.getTotalDistanceKm()));
     }
 
     public void togglePause() {
@@ -171,7 +175,7 @@ public class SpeedometerService extends Service {
             updateNotification(calculator.getSmoothedSpeed(),
                     calculator.getAverageSpeed(avgPeriodMin),
                     calculator.getTotalDistanceKm());
-            speak("Paused");
+            speak(str("Paused", "Паузу", "Пауза"));
         } else if (state == TrackState.PAUSED) {
             state = TrackState.RUNNING;
             slowStartMs = -1;
@@ -181,14 +185,12 @@ public class SpeedometerService extends Service {
             updateNotification(calculator.getSmoothedSpeed(),
                     calculator.getAverageSpeed(avgPeriodMin),
                     calculator.getTotalDistanceKm());
-            speak("Resumed");
+            speak(str("Resumed", "Знову їдемо", "Продолжаем"));
         }
     }
 
     public void announceNow(boolean includeCurrentSpeed) {
         if (!ttsReady) return;
-        // Guard against two triggers firing within 2 s of each other (e.g. torch callback
-        // racing with screen-on receiver, or avgRunnable overlapping with a manual call).
         long now = System.currentTimeMillis();
         if (lastAnyAnnounceMs > 0 && (now - lastAnyAnnounceMs) < 2000L) return;
 
@@ -201,9 +203,11 @@ public class SpeedometerService extends Service {
             sb.append(fmtSpeed(speed)).append(". ");
         }
         if (doAnnounceAvg)
-            sb.append("Average ").append(Math.round(avg)).append(". ");
+            sb.append(str("Average ", "Середня ", "Средняя "))
+              .append(Math.round(avg)).append(". ");
         if (doAnnounceDistance)
-            sb.append("Distance ").append(fmtDist(dist)).append(". ");
+            sb.append(str("Distance ", "Дистанція ", "Дистанция "))
+              .append(fmtDist(dist)).append(". ");
 
         if (sb.length() > 0) {
             speak(sb.toString().trim());
@@ -256,7 +260,7 @@ public class SpeedometerService extends Service {
             if (walkingSpeedEnabled && speed < 6f && speed > 0.5f) {
                 if (doAnnounceSpeed &&
                         calculator.shouldAnnounceSpeed(speedThresholdKmh, speedDebounceMs)) {
-                    speak("Walking speed");
+                    speak(str("Walking speed", "Швидкість пішохода", "Скорость черепахи"));
                     lastAnyAnnounceMs   = now;
                     lastSpeedAnnounceMs = now;
                 }
@@ -283,7 +287,9 @@ public class SpeedometerService extends Service {
             updateNotification(speed, avg, dist);
         }
 
-        @Override public void onProviderDisabled(@NonNull String p) { speak("GPS disabled"); }
+        @Override public void onProviderDisabled(@NonNull String p) {
+            speak(str("GPS disabled", "Треба увімкнути GPS", "GPS включи"));
+        }
     };
 
     private void scheduleAvgTimer() {
@@ -300,9 +306,11 @@ public class SpeedometerService extends Service {
                     sb.append(fmtSpeed(speed)).append(". ");
                 }
                 if (doAnnounceAvg)
-                    sb.append("Average ").append(Math.round(avg)).append(". ");
+                    sb.append(str("Average ", "Середня ", "Средняя "))
+                      .append(Math.round(avg)).append(". ");
                 if (doAnnounceDistance)
-                    sb.append("Distance ").append(fmtDist(dist)).append(". ");
+                    sb.append(str("Distance ", "Дистанція ", "Дистанция "))
+                      .append(fmtDist(dist)).append(". ");
 
                 if (sb.length() > 0) {
                     speak(sb.toString().trim());
@@ -352,21 +360,12 @@ public class SpeedometerService extends Service {
                 long debounceMs = (long) screenAnnounceDebounceSec * 1000L;
 
                 if (Intent.ACTION_SCREEN_ON.equals(action)) {
-                    // Only announce on lock screen (phone in pocket, glove-tap on power button).
-                    // When the screen comes on while already unlocked, skip — the user is
-                    // actively looking at the phone; no need to speak.
                     KeyguardManager km = (KeyguardManager) getSystemService(Context.KEYGUARD_SERVICE);
                     if (km != null && !km.isKeyguardLocked()) return;
-
                     if (now - lastScreenAnnounceMs < debounceMs) return;
                     lastScreenAnnounceMs = now;
                     announceNow(true);
-
                 } else if (Intent.ACTION_USER_PRESENT.equals(action)) {
-                    // Fired when the user dismisses the keyguard (unlock swipe / PIN / biometric).
-                    // If we already announced on ACTION_SCREEN_ON a moment ago, the debounce
-                    // will block a second announcement here — preventing the double-speak on
-                    // "wake screen → unlock" sequences.
                     if (now - lastScreenAnnounceMs < debounceMs) return;
                     lastScreenAnnounceMs = now;
                     announceNow(true);
@@ -388,13 +387,35 @@ public class SpeedometerService extends Service {
 
     private void initTts() {
         tts = new TextToSpeech(this, status -> {
-            if (status == TextToSpeech.SUCCESS) {
-                int r = tts.setLanguage(java.util.Locale.ENGLISH);
-                ttsReady = (r != TextToSpeech.LANG_MISSING_DATA
-                         && r != TextToSpeech.LANG_NOT_SUPPORTED);
-                audioEnhancer = new AudioEnhancer(this, tts);
-                audioEnhancer.setGainDb(gainDb);
+            if (status != TextToSpeech.SUCCESS) return;
+
+            // Определяем язык системы и пробуем установить его в TTS
+            String sysLang = Locale.getDefault().getLanguage(); // "uk", "ru", "en", ...
+            Locale ttsLocale;
+            if ("uk".equals(sysLang)) {
+                ttsLocale = new Locale("uk");
+                lang = "uk";
+            } else if ("ru".equals(sysLang)) {
+                ttsLocale = new Locale("ru");
+                lang = "ru";
+            } else {
+                ttsLocale = Locale.ENGLISH;
+                lang = "en";
             }
+
+            int result = tts.setLanguage(ttsLocale);
+            if (result == TextToSpeech.LANG_MISSING_DATA
+                    || result == TextToSpeech.LANG_NOT_SUPPORTED) {
+                // Запрошенный язык не установлен — откатываемся на английский
+                Log.w(TAG, "TTS: language " + ttsLocale + " not supported, falling back to EN");
+                lang = "en";
+                result = tts.setLanguage(Locale.ENGLISH);
+            }
+
+            ttsReady = (result != TextToSpeech.LANG_MISSING_DATA
+                     && result != TextToSpeech.LANG_NOT_SUPPORTED);
+            audioEnhancer = new AudioEnhancer(this, tts);
+            audioEnhancer.setGainDb(gainDb);
         });
     }
 
@@ -402,10 +423,8 @@ public class SpeedometerService extends Service {
         if (!ttsReady || tts == null) return;
         if (state == TrackState.PAUSED) return;
 
-        // Cancel any in-flight enhanced audio so it doesn't overlap with the new utterance
         if (audioEnhancer != null) audioEnhancer.cancel();
 
-        // Prevent the audio from re-triggering the torch callback
         lastTorchMs = System.currentTimeMillis();
 
         PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
@@ -419,6 +438,39 @@ public class SpeedometerService extends Service {
             tts.speak(text, TextToSpeech.QUEUE_FLUSH, params, "sb");
         }
     }
+
+    // ── Локализация ───────────────────────────────────────────────────────────
+
+    /** Выбирает строку по текущему языку TTS. */
+    private String str(String en, String uk, String ru) {
+        switch (lang) {
+            case "uk": return uk;
+            case "ru": return ru;
+            default:   return en;
+        }
+    }
+
+    private String fmtSpeed(float kmh) {
+        return str("Speed ", "Швидкість ", "Скорость ") + Math.round(kmh);
+    }
+
+    private String fmtDist(float km) {
+        if (km < 1f) {
+            int m = Math.round(km * 1000);
+            switch (lang) {
+                case "uk": return m + " метрів";
+                case "ru": return m + " метров";
+                default:   return String.format(Locale.US, "%.0f meters", km * 1000);
+            }
+        }
+        switch (lang) {
+            case "uk": return String.format(Locale.getDefault(), "%.1f кілометрів", km);
+            case "ru": return String.format(Locale.getDefault(), "%.1f километров", km);
+            default:   return String.format(Locale.US, "%.1f kilometers", km);
+        }
+    }
+
+    // ── Канал уведомлений ─────────────────────────────────────────────────────
 
     private void createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -491,15 +543,6 @@ public class SpeedometerService extends Service {
         gainDb                   = p.getFloat("gain_db",             12f);
         calculator.setAlpha(p.getFloat("ema_alpha", 0.3f));
         if (audioEnhancer != null) audioEnhancer.setGainDb(gainDb);
-    }
-
-    private String fmtSpeed(float kmh) {
-        return "Speed " + Math.round(kmh);
-    }
-
-    private String fmtDist(float km) {
-        if (km < 1f) return String.format(Locale.US, "%.0f meters", km * 1000);
-        return String.format(Locale.US, "%.1f kilometers", km);
     }
 
     @Override
