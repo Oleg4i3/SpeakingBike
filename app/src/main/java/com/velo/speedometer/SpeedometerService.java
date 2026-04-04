@@ -42,6 +42,7 @@ public class SpeedometerService extends Service {
     public static final String ACTION_STOP     = "sb.STOP";
     public static final String ACTION_PAUSE    = "sb.PAUSE";
     public static final String ACTION_ANNOUNCE = "sb.ANNOUNCE";
+    public static final String ACTION_RELOAD   = "sb.RELOAD";
 
     private final IBinder binder = new LocalBinder();
     public class LocalBinder extends Binder {
@@ -74,6 +75,7 @@ public class SpeedometerService extends Service {
     private long            lastAnyAnnounceMs   = 0;
 
     private long slowStartMs = -1;
+    private boolean autoPaused = false;   // true = пауза поставлена автоматически
 
     private SpeedListener listener;
 
@@ -117,6 +119,7 @@ public class SpeedometerService extends Service {
             case ACTION_STOP:     stopTracking();    break;
             case ACTION_PAUSE:    togglePause();     break;
             case ACTION_ANNOUNCE: announceNow(true); break;
+            case ACTION_RELOAD:   reloadSettings();  break;
         }
         return START_STICKY;
     }
@@ -133,6 +136,7 @@ public class SpeedometerService extends Service {
         lastSpeedAnnounceMs = 0;
         lastAnyAnnounceMs   = 0;
         slowStartMs         = -1;
+        autoPaused          = false;
         state = TrackState.RUNNING;
         notifyStateChanged();
 
@@ -169,6 +173,7 @@ public class SpeedometerService extends Service {
 
     public void togglePause() {
         if (state == TrackState.RUNNING) {
+            autoPaused = false;   // ручная пауза
             state = TrackState.PAUSED;
             notifyStateChanged();
             if (avgRunnable != null) handler.removeCallbacks(avgRunnable);
@@ -177,6 +182,7 @@ public class SpeedometerService extends Service {
                     calculator.getTotalDistanceKm());
             speak(str("Paused", "Паузу", "Пауза"));
         } else if (state == TrackState.PAUSED) {
+            autoPaused = false;   // снятие паузы (ручное или авто)
             state = TrackState.RUNNING;
             slowStartMs = -1;
             notifyStateChanged();
@@ -239,6 +245,12 @@ public class SpeedometerService extends Service {
 
             if (listener != null) listener.onSpeedUpdate(speed, avg, dist);
 
+            // Авто-возобновление — проверяем ДО раннего выхода по PAUSED,
+            // но только если пауза была выставлена автоматически.
+            if (autoPaused && state == TrackState.PAUSED && speed > 6f) {
+                togglePause();   // togglePause сбросит autoPaused и уведомит UI
+            }
+
             if (state != TrackState.RUNNING) return;
 
             if (autoPauseEnabled) {
@@ -246,15 +258,12 @@ public class SpeedometerService extends Service {
                     if (slowStartMs < 0) slowStartMs = now;
                     else if ((now - slowStartMs) > (long) autoPauseSec * 1000L) {
                         slowStartMs = -1;
-                        togglePause();
+                        autoPause();   // объявляет и ставит авто-паузу
                         return;
                     }
                 } else {
                     slowStartMs = -1;
                 }
-            }
-            if (state == TrackState.PAUSED && speed > 6f) {
-                togglePause();
             }
 
             if (walkingSpeedEnabled && speed < 6f && speed > 0.5f) {
@@ -522,6 +531,41 @@ public class SpeedometerService extends Service {
 
     private void notifyStateChanged() {
         if (listener != null) listener.onStateChanged(state);
+    }
+
+    /** Автоматическая пауза из-за долгого простоя. */
+    private void autoPause() {
+        if (state != TrackState.RUNNING) return;
+        // speak() вызываем ДО смены состояния, иначе он блокируется проверкой PAUSED
+        speak(str(
+            "You've been stopped for a while. Auto-paused.",
+            "Ви довго стоїте. Лог на паузі.",
+            "Долго стоите. Авто-пауза."));
+        autoPaused = true;
+        state = TrackState.PAUSED;
+        notifyStateChanged();
+        if (avgRunnable != null) handler.removeCallbacks(avgRunnable);
+        updateNotification(calculator.getSmoothedSpeed(),
+                calculator.getAverageSpeed(avgPeriodMin),
+                calculator.getTotalDistanceKm());
+    }
+
+    /** Применяет новые настройки немедленно, не останавливая поездку. */
+    public void reloadSettings() {
+        if (state == TrackState.STOPPED) return;
+        boolean prevScreenAnnounce = screenAnnounceEnabled;
+        boolean prevDoAnnounceAvg  = doAnnounceAvg;
+        loadSettings();
+        // Перезапускаем avg-таймер если изменилась галка или интервал
+        if (prevDoAnnounceAvg || doAnnounceAvg) {
+            if (avgRunnable != null) handler.removeCallbacks(avgRunnable);
+            if (doAnnounceAvg && state == TrackState.RUNNING) scheduleAvgTimer();
+        }
+        // Обновляем регистрацию screen-receiver если галка изменилась
+        if (prevScreenAnnounce != screenAnnounceEnabled) {
+            unregisterScreenReceiver();
+            if (screenAnnounceEnabled) registerScreenReceiver();
+        }
     }
 
     private void loadSettings() {

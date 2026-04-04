@@ -143,6 +143,9 @@ public class SettingsActivity extends AppCompatActivity {
                 .putBoolean("screen_announce",   cbScreenAnnounce.isChecked())
                 .putBoolean("enhanced_audio",    cbEnhancedAudio.isChecked())
                 .apply();
+        // Применяем настройки немедленно, если сервис уже запущен
+        startService(new Intent(this, SpeedometerService.class)
+                .setAction(SpeedometerService.ACTION_RELOAD));
         finish();
     }
 
