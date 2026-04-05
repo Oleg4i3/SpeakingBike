@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+<defs>
+  <filter id="bs">
+    <feDropShadow dx="2" dy="3" stdDeviation="6" flood-color="#000000" flood-opacity="0.3"/>
+  </filter>
+</defs>
+<circle cx="256" cy="256" r="256" fill="#0E1A2B"/>
+<ellipse cx="185" cy="370" rx="185" ry="145" fill="#F5A623" opacity="0.06"/>
+
+<!-- Ground -->
+<line x1="22" y1="490" x2="480" y2="490" stroke="#1e3050" stroke-width="3"/>
+<ellipse cx="270" cy="496" rx="208" ry="7" fill="#000000" opacity="0.18"/>
+
+<!-- Big wheel spokes (12) -->
+<line x1="195.0" y1="360.0" x2="309.0" y2="360.0" stroke="#B87510" stroke-width="4.5" stroke-linecap="round"/>
+<line x1="193.7" y1="365.0" x2="292.4" y2="422.0" stroke="#B87510" stroke-width="4.5" stroke-linecap="round"/>
+<line x1="190.0" y1="368.7" x2="247.0" y2="467.4" stroke="#B87510" stroke-width="4.5" stroke-linecap="round"/>
+<line x1="185.0" y1="370.0" x2="185.0" y2="484.0" stroke="#B87510" stroke-width="4.5" stroke-linecap="round"/>
+<line x1="180.0" y1="368.7" x2="123.0" y2="467.4" stroke="#B87510" stroke-width="4.5" stroke-linecap="round"/>
+<line x1="176.3" y1="365.0" x2="77.6" y2="422.0" stroke="#B87510" stroke-width="4.5" stroke-linecap="round"/>
+<line x1="175.0" y1="360.0" x2="61.0" y2="360.0" stroke="#B87510" stroke-width="4.5" stroke-linecap="round"/>
+<line x1="176.3" y1="355.0" x2="77.6" y2="298.0" stroke="#B87510" stroke-width="4.5" stroke-linecap="round"/>
+<line x1="180.0" y1="351.3" x2="123.0" y2="252.6" stroke="#B87510" stroke-width="4.5" stroke-linecap="round"/>
+<line x1="185.0" y1="350.0" x2="185.0" y2="236.0" stroke="#B87510" stroke-width="4.5" stroke-linecap="round"/>
+<line x1="190.0" y1="351.3" x2="247.0" y2="252.6" stroke="#B87510" stroke-width="4.5" stroke-linecap="round"/>
+<line x1="193.7" y1="355.0" x2="292.4" y2="298.0" stroke="#B87510" stroke-width="4.5" stroke-linecap="round"/>
+<!-- Big wheel rim + hub -->
+<circle cx="185" cy="360" r="130" fill="none" stroke="#F5A623" stroke-width="14"/>
+<circle cx="185" cy="360" r="14" fill="#F5A623"/>
+<circle cx="185" cy="360" r="7" fill="#0E1A2B"/>
+
+<!-- Small wheel spokes (8) -->
+<line x1="397.0" y1="430.0" x2="444.0" y2="430.0" stroke="#B87510" stroke-width="3.5" stroke-linecap="round"/>
+<line x1="394.9" y1="434.9" x2="428.2" y2="468.2" stroke="#B87510" stroke-width="3.5" stroke-linecap="round"/>
+<line x1="390.0" y1="437.0" x2="390.0" y2="484.0" stroke="#B87510" stroke-width="3.5" stroke-linecap="round"/>
+<line x1="385.1" y1="434.9" x2="351.8" y2="468.2" stroke="#B87510" stroke-width="3.5" stroke-linecap="round"/>
+<line x1="383.0" y1="430.0" x2="336.0" y2="430.0" stroke="#B87510" stroke-width="3.5" stroke-linecap="round"/>
+<line x1="385.1" y1="425.1" x2="351.8" y2="391.8" stroke="#B87510" stroke-width="3.5" stroke-linecap="round"/>
+<line x1="390.0" y1="423.0" x2="390.0" y2="376.0" stroke="#B87510" stroke-width="3.5" stroke-linecap="round"/>
+<line x1="394.9" y1="425.1" x2="428.2" y2="391.8" stroke="#B87510" stroke-width="3.5" stroke-linecap="round"/>
+<!-- Small wheel rim + hub -->
+<circle cx="390" cy="430" r="60" fill="none" stroke="#F5A623" stroke-width="10"/>
+<circle cx="390" cy="430" r="9" fill="#F5A623"/>
+<circle cx="390" cy="430" r="4.5" fill="#0E1A2B"/>
+
+<!-- Frame -->
+<path d="M 390,430 C 365,315 333,303 268,248" fill="none" stroke="#F5A623" stroke-width="11" stroke-linecap="round"/>
+<line x1="268" y1="248" x2="185" y2="332" stroke="#F5A623" stroke-width="11" stroke-linecap="round"/>
+<line x1="268" y1="248" x2="260" y2="172" stroke="#F5A623" stroke-width="9" stroke-linecap="round"/>
+<line x1="230" y1="172" x2="280" y2="172" stroke="#F5A623" stroke-width="9" stroke-linecap="round"/>
+<line x1="185" y1="332" x2="189" y2="250" stroke="#F5A623" stroke-width="9" stroke-linecap="round"/>
+<line x1="155" y1="250" x2="217" y2="250" stroke="#F5A623" stroke-width="9" stroke-linecap="round"/>
+
+<!-- Pedal cranks directly on big wheel axle -->
+<line x1="185" y1="360" x2="214.7" y2="386.8" stroke="#F5A623" stroke-width="8" stroke-linecap="round"/>
+<line x1="224.8" y1="375.6" x2="204.7" y2="397.9" stroke="#F5A623" stroke-width="7" stroke-linecap="round"/>
+<line x1="185" y1="360" x2="155.3" y2="333.2" stroke="#F5A623" stroke-width="8" stroke-linecap="round"/>
+<line x1="145.2" y1="344.4" x2="165.3" y2="322.1" stroke="#F5A623" stroke-width="7" stroke-linecap="round"/>
+
+<!-- Speech bubble -->
+<g filter="url(#bs)">
+  <rect x="280" y="115" width="132" height="76" rx="22" fill="#FFFFFF"/>
+  <path d="M 316,191 L 294,223 L 340,191" fill="#FFFFFF"/>
+</g>
+<rect x="303" y="145" width="10" height="16" rx="2" fill="#0E1A2B"/>
+<path d="M 313,145 L 326,134 L 326,172 L 313,161 Z" fill="#0E1A2B"/>
+<path d="M 345,142.5 Q 355,153 345,163.5" fill="none" stroke="#0E1A2B" stroke-width="4.5" stroke-linecap="round"/>
+<path d="M 355,136.3 Q 365,153 355,169.7" fill="none" stroke="#0E1A2B" stroke-width="4" stroke-linecap="round"/>
+
+<text x="368" y="163" text-anchor="middle"
+      font-family="Arial Black, Arial, sans-serif" font-weight="900"
+      font-size="26" fill="#0E1A2B">km/h</text>
+</svg>
