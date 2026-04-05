@@ -1,0 +1,292 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent" android:layout_height="match_parent"
+    android:background="@color/colorBackground">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:orientation="vertical" android:padding="16dp">
+
+        <!-- ═══ SPEED ANNOUNCEMENT ═══ -->
+        <TextView style="@style/SectionHeader" android:text="SPEED ANNOUNCEMENT"/>
+        <LinearLayout style="@style/Card" android:orientation="vertical">
+
+            <!-- threshold -->
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:gravity="center_vertical" android:orientation="horizontal">
+                <TextView android:layout_width="0dp" android:layout_height="wrap_content"
+                    android:layout_weight="1" android:text="Speed change threshold"
+                    android:textColor="@color/colorTextSecondary" android:textSize="13sp"/>
+                <TextView android:id="@+id/tvThresholdVal" android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" android:minWidth="72dp" android:gravity="end"
+                    android:textColor="@color/colorAccent" android:textSize="15sp" android:textStyle="bold"/>
+                <ImageButton android:id="@+id/btnInfoThreshold" android:layout_width="36dp"
+                    android:layout_height="36dp" android:background="?attr/selectableItemBackgroundBorderless"
+                    android:src="@drawable/ic_help" android:tint="@color/colorTextSecondary" android:contentDescription="Info"/>
+            </LinearLayout>
+            <com.google.android.material.slider.Slider android:id="@+id/sliderThreshold"
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:valueFrom="1" android:valueTo="30" android:stepSize="1"
+                app:thumbColor="@color/colorAccent" app:trackColorActive="@color/colorAccent"
+                app:trackColorInactive="@color/colorDivider"/>
+
+            <View style="@style/Divider"/>
+
+            <!-- debounce -->
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:gravity="center_vertical" android:orientation="horizontal">
+                <TextView android:layout_width="0dp" android:layout_height="wrap_content"
+                    android:layout_weight="1" android:text="Min time between alerts"
+                    android:textColor="@color/colorTextSecondary" android:textSize="13sp"/>
+                <TextView android:id="@+id/tvDebounceVal" android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" android:minWidth="72dp" android:gravity="end"
+                    android:textColor="@color/colorAccent" android:textSize="15sp" android:textStyle="bold"/>
+                <ImageButton android:id="@+id/btnInfoDebounce" android:layout_width="36dp"
+                    android:layout_height="36dp" android:background="?attr/selectableItemBackgroundBorderless"
+                    android:src="@drawable/ic_help" android:tint="@color/colorTextSecondary" android:contentDescription="Info"/>
+            </LinearLayout>
+            <com.google.android.material.slider.Slider android:id="@+id/sliderDebounce"
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:valueFrom="5" android:valueTo="120" android:stepSize="5"
+                app:thumbColor="@color/colorAccent" app:trackColorActive="@color/colorAccent"
+                app:trackColorInactive="@color/colorDivider"/>
+
+            <View style="@style/Divider"/>
+
+            <!-- max silence -->
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:gravity="center_vertical" android:orientation="horizontal">
+                <TextView android:layout_width="0dp" android:layout_height="wrap_content"
+                    android:layout_weight="1" android:text="Max silence interval"
+                    android:textColor="@color/colorTextSecondary" android:textSize="13sp"/>
+                <TextView android:id="@+id/tvMaxIntervalVal" android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" android:minWidth="72dp" android:gravity="end"
+                    android:textColor="@color/colorAccent" android:textSize="15sp" android:textStyle="bold"/>
+                <ImageButton android:id="@+id/btnInfoMaxInterval" android:layout_width="36dp"
+                    android:layout_height="36dp" android:background="?attr/selectableItemBackgroundBorderless"
+                    android:src="@drawable/ic_help" android:tint="@color/colorTextSecondary" android:contentDescription="Info"/>
+            </LinearLayout>
+            <com.google.android.material.slider.Slider android:id="@+id/sliderMaxInterval"
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:valueFrom="10" android:valueTo="600" android:stepSize="10"
+                app:thumbColor="@color/colorAccent" app:trackColorActive="@color/colorAccent"
+                app:trackColorInactive="@color/colorDivider"/>
+
+            <View style="@style/Divider"/>
+            <CheckBox android:id="@+id/cbSpeed" android:layout_width="match_parent"
+                android:layout_height="wrap_content" android:layout_marginTop="4dp"
+                android:buttonTint="@color/colorAccent" android:text="@string/cb_announce_speed"
+                android:textColor="@color/colorText" android:textSize="15sp"/>
+            <CheckBox android:id="@+id/cbWalkingSpeed" android:layout_width="match_parent"
+                android:layout_height="wrap_content" android:buttonTint="@color/colorAccent"
+                android:text="@string/cb_walking_speed"
+                android:textColor="@color/colorText" android:textSize="15sp"/>
+            <ImageButton android:id="@+id/btnInfoWalking" android:layout_width="36dp"
+                android:layout_height="36dp" android:layout_gravity="end"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:src="@drawable/ic_help" android:tint="@color/colorTextSecondary" android:contentDescription="Info"/>
+        </LinearLayout>
+
+        <!-- ═══ AVERAGE SPEED ═══ -->
+        <TextView style="@style/SectionHeader" android:text="AVERAGE SPEED"/>
+        <LinearLayout style="@style/Card" android:orientation="vertical">
+
+            <!-- avg period -->
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:gravity="center_vertical" android:orientation="horizontal">
+                <TextView android:layout_width="0dp" android:layout_height="wrap_content"
+                    android:layout_weight="1" android:text="Calculation period"
+                    android:textColor="@color/colorTextSecondary" android:textSize="13sp"/>
+                <TextView android:id="@+id/tvAvgPeriodVal" android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" android:minWidth="80dp" android:gravity="end"
+                    android:textColor="@color/colorAccent" android:textSize="15sp" android:textStyle="bold"/>
+                <ImageButton android:id="@+id/btnInfoAvgPeriod" android:layout_width="36dp"
+                    android:layout_height="36dp" android:background="?attr/selectableItemBackgroundBorderless"
+                    android:src="@drawable/ic_help" android:tint="@color/colorTextSecondary" android:contentDescription="Info"/>
+            </LinearLayout>
+            <com.google.android.material.slider.Slider android:id="@+id/sliderAvgPeriod"
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:valueFrom="0" android:valueTo="60" android:stepSize="1"
+                app:thumbColor="@color/colorAccent" app:trackColorActive="@color/colorAccent"
+                app:trackColorInactive="@color/colorDivider"/>
+
+            <View style="@style/Divider"/>
+
+            <!-- avg interval -->
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:gravity="center_vertical" android:orientation="horizontal">
+                <TextView android:layout_width="0dp" android:layout_height="wrap_content"
+                    android:layout_weight="1" android:text="Announcement interval"
+                    android:textColor="@color/colorTextSecondary" android:textSize="13sp"/>
+                <TextView android:id="@+id/tvAvgIntervalVal" android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" android:minWidth="72dp" android:gravity="end"
+                    android:textColor="@color/colorAccent" android:textSize="15sp" android:textStyle="bold"/>
+                <ImageButton android:id="@+id/btnInfoAvgInterval" android:layout_width="36dp"
+                    android:layout_height="36dp" android:background="?attr/selectableItemBackgroundBorderless"
+                    android:src="@drawable/ic_help" android:tint="@color/colorTextSecondary" android:contentDescription="Info"/>
+            </LinearLayout>
+            <com.google.android.material.slider.Slider android:id="@+id/sliderAvgInterval"
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:valueFrom="1" android:valueTo="30" android:stepSize="1"
+                app:thumbColor="@color/colorAccent" app:trackColorActive="@color/colorAccent"
+                app:trackColorInactive="@color/colorDivider"/>
+
+            <View style="@style/Divider"/>
+            <CheckBox android:id="@+id/cbAvg" android:layout_width="match_parent"
+                android:layout_height="wrap_content" android:layout_marginTop="4dp"
+                android:buttonTint="@color/colorAccent" android:text="@string/cb_announce_avg"
+                android:textColor="@color/colorText" android:textSize="15sp"/>
+            <CheckBox android:id="@+id/cbDistance" android:layout_width="match_parent"
+                android:layout_height="wrap_content" android:buttonTint="@color/colorAccent"
+                android:text="@string/cb_announce_distance"
+                android:textColor="@color/colorText" android:textSize="15sp"/>
+        </LinearLayout>
+
+        <!-- ═══ AUTO-PAUSE ═══ -->
+        <TextView style="@style/SectionHeader" android:text="AUTO-PAUSE"/>
+        <LinearLayout style="@style/Card" android:orientation="vertical">
+
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:gravity="center_vertical" android:orientation="horizontal">
+                <CheckBox android:id="@+id/cbAutoPause" android:layout_width="0dp"
+                    android:layout_height="wrap_content" android:layout_weight="1"
+                    android:buttonTint="@color/colorAccent" android:text="@string/cb_auto_pause"
+                    android:textColor="@color/colorText" android:textSize="15sp"/>
+                <ImageButton android:id="@+id/btnInfoAutoPause" android:layout_width="36dp"
+                    android:layout_height="36dp" android:background="?attr/selectableItemBackgroundBorderless"
+                    android:src="@drawable/ic_help" android:tint="@color/colorTextSecondary" android:contentDescription="Info"/>
+            </LinearLayout>
+
+            <View style="@style/Divider"/>
+
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:gravity="center_vertical" android:orientation="horizontal">
+                <TextView android:layout_width="0dp" android:layout_height="wrap_content"
+                    android:layout_weight="1" android:text="Pause after stopped for"
+                    android:textColor="@color/colorTextSecondary" android:textSize="13sp"/>
+                <TextView android:id="@+id/tvAutoPauseSecVal" android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" android:minWidth="72dp" android:gravity="end"
+                    android:textColor="@color/colorAccent" android:textSize="15sp" android:textStyle="bold"/>
+            </LinearLayout>
+            <com.google.android.material.slider.Slider android:id="@+id/sliderAutoPauseSec"
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:valueFrom="5" android:valueTo="120" android:stepSize="5"
+                app:thumbColor="@color/colorAccent" app:trackColorActive="@color/colorAccent"
+                app:trackColorInactive="@color/colorDivider"/>
+        </LinearLayout>
+
+        <!-- ═══ SCREEN-WAKE ANNOUNCE ═══ -->
+        <TextView style="@style/SectionHeader" android:text="SCREEN WAKE ANNOUNCE"/>
+        <LinearLayout style="@style/Card" android:orientation="vertical">
+
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:gravity="center_vertical" android:orientation="horizontal">
+                <CheckBox android:id="@+id/cbScreenAnnounce" android:layout_width="0dp"
+                    android:layout_height="wrap_content" android:layout_weight="1"
+                    android:buttonTint="@color/colorAccent" android:text="@string/cb_screen_announce"
+                    android:textColor="@color/colorText" android:textSize="15sp"/>
+                <ImageButton android:id="@+id/btnInfoScreen" android:layout_width="36dp"
+                    android:layout_height="36dp" android:background="?attr/selectableItemBackgroundBorderless"
+                    android:src="@drawable/ic_help" android:tint="@color/colorTextSecondary" android:contentDescription="Info"/>
+            </LinearLayout>
+
+            <View style="@style/Divider"/>
+
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:gravity="center_vertical" android:orientation="horizontal">
+                <TextView android:layout_width="0dp" android:layout_height="wrap_content"
+                    android:layout_weight="1" android:text="Min interval between screen announcements"
+                    android:textColor="@color/colorTextSecondary" android:textSize="13sp"/>
+                <TextView android:id="@+id/tvScreenDebounceVal" android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" android:minWidth="72dp" android:gravity="end"
+                    android:textColor="@color/colorAccent" android:textSize="15sp" android:textStyle="bold"/>
+            </LinearLayout>
+            <com.google.android.material.slider.Slider android:id="@+id/sliderScreenDebounce"
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:valueFrom="5" android:valueTo="120" android:stepSize="5"
+                app:thumbColor="@color/colorAccent" app:trackColorActive="@color/colorAccent"
+                app:trackColorInactive="@color/colorDivider"/>
+        </LinearLayout>
+
+        <!-- ═══ AUDIO BOOST ═══ -->
+        <TextView style="@style/SectionHeader" android:text="AUDIO BOOST (SCREEN OFF)"/>
+        <LinearLayout style="@style/Card" android:orientation="vertical">
+
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:gravity="center_vertical" android:orientation="horizontal">
+                <CheckBox android:id="@+id/cbEnhancedAudio" android:layout_width="0dp"
+                    android:layout_height="wrap_content" android:layout_weight="1"
+                    android:buttonTint="@color/colorAccent" android:text="@string/cb_enhanced_audio"
+                    android:textColor="@color/colorText" android:textSize="15sp"/>
+                <ImageButton android:id="@+id/btnInfoGain" android:layout_width="36dp"
+                    android:layout_height="36dp" android:background="?attr/selectableItemBackgroundBorderless"
+                    android:src="@drawable/ic_help" android:tint="@color/colorTextSecondary" android:contentDescription="Info"/>
+            </LinearLayout>
+
+            <View style="@style/Divider"/>
+
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:gravity="center_vertical" android:orientation="horizontal">
+                <TextView android:layout_width="0dp" android:layout_height="wrap_content"
+                    android:layout_weight="1" android:text="Voice gain"
+                    android:textColor="@color/colorTextSecondary" android:textSize="13sp"/>
+                <TextView android:id="@+id/tvGainVal" android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" android:minWidth="72dp" android:gravity="end"
+                    android:textColor="@color/colorAccent" android:textSize="15sp" android:textStyle="bold"/>
+            </LinearLayout>
+            <com.google.android.material.slider.Slider android:id="@+id/sliderGain"
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:valueFrom="0" android:valueTo="30" android:stepSize="1"
+                app:thumbColor="@color/colorAccent" app:trackColorActive="@color/colorAccent"
+                app:trackColorInactive="@color/colorDivider"/>
+        </LinearLayout>
+
+        <!-- ═══ CADENCE ═══ -->
+        <TextView style="@style/SectionHeader" android:text="CADENCE"/>
+        <LinearLayout style="@style/Card" android:orientation="vertical">
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:gravity="center_vertical" android:orientation="horizontal">
+                <CheckBox android:id="@+id/cbCadence" android:layout_width="0dp"
+                    android:layout_height="wrap_content" android:layout_weight="1"
+                    android:buttonTint="@color/colorAccent" android:text="@string/cb_announce_cadence"
+                    android:textColor="@color/colorText" android:textSize="15sp"/>
+                <ImageButton android:id="@+id/btnInfoCadence" android:layout_width="36dp"
+                    android:layout_height="36dp" android:background="?attr/selectableItemBackgroundBorderless"
+                    android:src="@drawable/ic_help" android:tint="@color/colorTextSecondary" android:contentDescription="Info"/>
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- ═══ ADVANCED ═══ -->
+        <TextView style="@style/SectionHeader" android:text="ADVANCED"/>
+        <LinearLayout style="@style/Card" android:orientation="vertical">
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:gravity="center_vertical" android:orientation="horizontal">
+                <TextView android:layout_width="0dp" android:layout_height="wrap_content"
+                    android:layout_weight="1" android:text="EMA smoothing factor \u03b1"
+                    android:textColor="@color/colorTextSecondary" android:textSize="13sp"/>
+                <TextView android:id="@+id/tvAlphaVal" android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" android:minWidth="72dp" android:gravity="end"
+                    android:textColor="@color/colorAccent" android:textSize="15sp" android:textStyle="bold"/>
+                <ImageButton android:id="@+id/btnInfoAlpha" android:layout_width="36dp"
+                    android:layout_height="36dp" android:background="?attr/selectableItemBackgroundBorderless"
+                    android:src="@drawable/ic_help" android:tint="@color/colorTextSecondary" android:contentDescription="Info"/>
+            </LinearLayout>
+            <com.google.android.material.slider.Slider android:id="@+id/sliderAlpha"
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:valueFrom="0.05" android:valueTo="1.0" android:stepSize="0.05"
+                app:thumbColor="@color/colorAccent" app:trackColorActive="@color/colorAccent"
+                app:trackColorInactive="@color/colorDivider"/>
+        </LinearLayout>
+
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:layout_marginTop="20dp" android:gravity="center"
+            android:text="@string/hint_volume_keys"
+            android:textColor="@color/colorTextSecondary" android:textSize="13sp"/>
+
+        <com.google.android.material.button.MaterialButton android:id="@+id/btnSave"
+            style="@style/Widget.MaterialComponents.Button"
+            android:layout_width="match_parent" android:layout_height="56dp"
+            android:layout_marginTop="20dp" android:layout_marginBottom="16dp"
+            android:text="@string/btn_save" android:textSize="16sp"
+            app:backgroundTint="@color/colorAccent" app:cornerRadius="12dp"/>
+    </LinearLayout>
+</ScrollView>

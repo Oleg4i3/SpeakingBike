@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">SpeakingBike</string>
+    <string name="title_settings">Settings</string>
+    <string name="btn_start">START</string>
+    <string name="btn_pause">PAUSE</string>
+    <string name="btn_resume">RESUME</string>
+    <string name="btn_stop">STOP</string>
+    <string name="btn_save">Save</string>
+    <string name="cb_announce_speed">Announce speed changes</string>
+    <string name="cb_announce_avg">Announce average speed</string>
+    <string name="cb_announce_distance">Announce distance</string>
+    <string name="cb_walking_speed">Say \"Walking speed\" below 6 km/h</string>
+    <string name="cb_auto_pause">Auto-pause when stopped (&lt;3 km/h)</string>
+    <string name="cb_screen_announce">Announce on locked screen wake</string>
+    <string name="cb_enhanced_audio">Enable audio boost (screen off only)</string>
+    <string name="cb_announce_cadence">Announce cadence (RPM, no sensor needed)</string>
+    <string name="btn_cadence_graph">📈 Cadence</string>
+    <string name="title_cadence_graph">Accelerometer Signal</string>
+    <string name="cadence_no_signal">— RPM</string>
+    <string name="chart_legend">cyan — |accel| m/s²  ·  dashed — 9.81 g  ·  drag to scroll</string>
+    <string name="btn_live">▶ Live</string>
+    <string name="btn_save_csv">💾 Save CSV</string>
+    <string name="dialog_save_title">Ride finished</string>
+    <string name="dialog_save_message">Save accelerometer data to CSV file?</string>
+    <string name="dialog_save_yes">Save</string>
+    <string name="csv_saved_ok">Saved %d samples to CSV</string>
+    <string name="csv_saved_error">Failed to save CSV</string>
+    <string name="hint_volume_keys">Vol ↓ double — announce now\nVol ↑ double — pause / resume\n(works when app is on screen)</string>
+    <string name="cd_settings">Settings</string>
+</resources>
