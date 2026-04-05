@@ -30,6 +30,7 @@ public class SettingsActivity extends AppCompatActivity {
     private CheckBox cbSpeed, cbAvg, cbDistance;
     private CheckBox cbAutoPause, cbWalkingSpeed;
     private CheckBox cbScreenAnnounce, cbEnhancedAudio;
+    private CheckBox cbCadence;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -76,6 +77,7 @@ public class SettingsActivity extends AppCompatActivity {
         cbWalkingSpeed  = findViewById(R.id.cbWalkingSpeed);
         cbScreenAnnounce= findViewById(R.id.cbScreenAnnounce);
         cbEnhancedAudio = findViewById(R.id.cbEnhancedAudio);
+        cbCadence       = findViewById(R.id.cbCadence);
     }
 
     private void loadValues() {
@@ -97,6 +99,7 @@ public class SettingsActivity extends AppCompatActivity {
         cbWalkingSpeed  .setChecked(p.getBoolean("walking_speed",     false));
         cbScreenAnnounce.setChecked(p.getBoolean("screen_announce",   true));
         cbEnhancedAudio .setChecked(p.getBoolean("enhanced_audio",    true));
+        cbCadence       .setChecked(p.getBoolean("announce_cadence",  false));
 
         updateAllLabels();
     }
@@ -143,6 +146,7 @@ public class SettingsActivity extends AppCompatActivity {
                 .putBoolean("walking_speed",     cbWalkingSpeed .isChecked())
                 .putBoolean("screen_announce",   cbScreenAnnounce.isChecked())
                 .putBoolean("enhanced_audio",    cbEnhancedAudio.isChecked())
+                .putBoolean("announce_cadence",  cbCadence      .isChecked())
                 .apply();
         // Применяем настройки немедленно, если сервис уже запущен
         startService(new Intent(this, SpeedometerService.class)
@@ -183,6 +187,8 @@ public class SettingsActivity extends AppCompatActivity {
                 "When the screen is off, speech is synthesized to a file, then the gain is boosted digitally and a compressor+limiter is applied before playback.\n\nThis makes voice much louder and clearer in wind noise, at the cost of audio quality.\n\nHas no effect when screen is on (normal TTS is used instead).");
         info(R.id.btnInfoAlpha,       "EMA smoothing factor α",
                 "Controls GPS speed smoothing:\n\n• 0.1 — very smooth, slow to react\n• 0.3 — good balance for cycling\n• 0.8 — fast reaction, noisier\n\nFormula: speed = α × gps + (1−α) × previous");
+        info(R.id.btnInfoCadence,     "Announce cadence",
+                "Reads the phone accelerometer to estimate pedalling cadence (RPM) without any external sensor.\n\nKeep the phone in a trouser pocket or bag attached to your body (not to the frame).\n\nCadence is spoken right after speed: \"Speed 28. Cadence 85\".\n\nReads 0 RPM when coasting — nothing is announced then.");
     }
 
     private void info(int id, String title, String msg) {

@@ -99,12 +99,16 @@ public class SpeedometerService extends Service {
     private int     screenAnnounceDebounceSec;
     private boolean enhancedAudioEnabled;
     private float   gainDb;
+    private boolean doAnnounceCadence;
+    private float   lastCadenceRpm = 0f;
+    private CadenceDetector cadenceDetector;
 
     @Override
     public void onCreate() {
         super.onCreate();
         handler    = new Handler(Looper.getMainLooper());
         calculator = new SpeedCalculator(0.3f);
+        cadenceDetector = new CadenceDetector(this, rpm -> lastCadenceRpm = rpm);
         createNotificationChannel();
         initTts();
     }
@@ -148,6 +152,7 @@ public class SpeedometerService extends Service {
         }
 
         requestLocationUpdates();
+        cadenceDetector.start();
         registerTorchListener();
         if (screenAnnounceEnabled) registerScreenReceiver();
         if (doAnnounceAvg) scheduleAvgTimer();
@@ -160,6 +165,7 @@ public class SpeedometerService extends Service {
         notifyStateChanged();
 
         if (locationManager != null) locationManager.removeUpdates(locationListener);
+        cadenceDetector.stop();
         if (avgRunnable != null)     handler.removeCallbacks(avgRunnable);
         unregisterTorchListener();
         unregisterScreenReceiver();
@@ -206,7 +212,7 @@ public class SpeedometerService extends Service {
 
         StringBuilder sb = new StringBuilder();
         if (includeCurrentSpeed && doAnnounceSpeed) {
-            sb.append(fmtSpeed(speed)).append(". ");
+            sb.append(fmtSpeedWithCadence(speed)).append(". ");
         }
         if (doAnnounceAvg)
             sb.append(str("Average ", "Середня ", "Средняя "))
@@ -283,11 +289,11 @@ public class SpeedometerService extends Service {
                         && (now - lastAnyAnnounceMs) >= maxSilenceMs;
 
                 if (forceByMaxSilence) {
-                    speak(fmtSpeed(speed));
+                    speak(fmtSpeedWithCadence(speed));
                     lastAnyAnnounceMs   = now;
                     lastSpeedAnnounceMs = now;
                 } else if (calculator.shouldAnnounceSpeed(speedThresholdKmh, speedDebounceMs)) {
-                    speak(fmtSpeed(speed));
+                    speak(fmtSpeedWithCadence(speed));
                     lastAnyAnnounceMs   = now;
                     lastSpeedAnnounceMs = now;
                 }
@@ -312,7 +318,7 @@ public class SpeedometerService extends Service {
                 StringBuilder sb = new StringBuilder();
                 if (doAnnounceSpeed && lastSpeedAnnounceMs > 0
                         && (now - lastSpeedAnnounceMs) > 30_000L) {
-                    sb.append(fmtSpeed(speed)).append(". ");
+                    sb.append(fmtSpeedWithCadence(speed)).append(". ");
                 }
                 if (doAnnounceAvg)
                     sb.append(str("Average ", "Середня ", "Средняя "))
@@ -463,6 +469,15 @@ public class SpeedometerService extends Service {
         return str("Speed ", "Швидкість ", "Скорость ") + Math.round(kmh);
     }
 
+    /** fmtSpeed + cadence appended when enabled and a valid reading exists. */
+    private String fmtSpeedWithCadence(float kmh) {
+        String s = fmtSpeed(kmh);
+        if (doAnnounceCadence && lastCadenceRpm > 0f) {
+            s += ". " + str("Cadence ", "Каденс ", "Каданс ") + Math.round(lastCadenceRpm);
+        }
+        return s;
+    }
+
     private String fmtDist(float km) {
         if (km < 1f) {
             int m = Math.round(km * 1000);
@@ -585,6 +600,7 @@ public class SpeedometerService extends Service {
         screenAnnounceDebounceSec= p.getInt("screen_debounce",       15);
         enhancedAudioEnabled     = p.getBoolean("enhanced_audio",    true);
         gainDb                   = p.getFloat("gain_db",             12f);
+        doAnnounceCadence        = p.getBoolean("announce_cadence",  false);
         calculator.setAlpha(p.getFloat("ema_alpha", 0.3f));
         if (audioEnhancer != null) audioEnhancer.setGainDb(gainDb);
     }
