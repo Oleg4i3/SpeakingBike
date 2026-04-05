@@ -240,6 +240,21 @@
                 app:trackColorInactive="@color/colorDivider"/>
         </LinearLayout>
 
+        <!-- ═══ CADENCE ═══ -->
+        <TextView style="@style/SectionHeader" android:text="CADENCE"/>
+        <LinearLayout style="@style/Card" android:orientation="vertical">
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:gravity="center_vertical" android:orientation="horizontal">
+                <CheckBox android:id="@+id/cbCadence" android:layout_width="0dp"
+                    android:layout_height="wrap_content" android:layout_weight="1"
+                    android:buttonTint="@color/colorAccent" android:text="@string/cb_announce_cadence"
+                    android:textColor="@color/colorText" android:textSize="15sp"/>
+                <ImageButton android:id="@+id/btnInfoCadence" android:layout_width="36dp"
+                    android:layout_height="36dp" android:background="?attr/selectableItemBackgroundBorderless"
+                    android:src="@drawable/ic_help" android:tint="@color/colorTextSecondary" android:contentDescription="Info"/>
+            </LinearLayout>
+        </LinearLayout>
+
         <!-- ═══ ADVANCED ═══ -->
         <TextView style="@style/SectionHeader" android:text="ADVANCED"/>
         <LinearLayout style="@style/Card" android:orientation="vertical">
