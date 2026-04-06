@@ -15,6 +15,7 @@
     <string name="cb_screen_announce">Announce on locked screen wake</string>
     <string name="cb_enhanced_audio">Enable audio boost (screen off only)</string>
     <string name="cb_announce_cadence">Announce cadence (RPM, no sensor needed)</string>
+    <string name="cb_exclude_pauses">Exclude pauses from average speed</string>
     <string name="btn_cadence_graph">📈 Cadence</string>
     <string name="title_cadence_graph">Accelerometer Signal</string>
     <string name="cadence_no_signal">— RPM</string>
