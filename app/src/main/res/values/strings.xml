@@ -19,7 +19,7 @@
     <string name="btn_cadence_graph">📈 Cadence</string>
     <string name="title_cadence_graph">Accelerometer Signal</string>
     <string name="cadence_no_signal">— RPM</string>
-    <string name="chart_legend">cyan — |accel| m/s²  ·  yellow ── cadence stable  ·  orange ╌ cadence uncertain  ·  pinch to zoom</string>
+    <string name="chart_legend">cyan |accel|  ·  yellow ── cadence  ·  orange ╌ uncertain  ·  green speed  ·  pinch=zoom</string>
     <string name="btn_live">▶ Live</string>
     <string name="btn_save_csv">💾 Save CSV</string>
     <string name="dialog_save_title">Ride finished</string>
