@@ -146,8 +146,10 @@ public class CadenceGraphActivity extends AppCompatActivity {
             tvSamples.setText("0:00  (0 samples)");
             return;
         }
-        if (detector.getRawSamples() != chart.getDataSource())
+        if (detector.getRawSamples() != chart.getDataSource()) {
             chart.setData(detector.getRawSamples());
+            chart.setCadenceData(detector.getCadenceHistory());
+        }
 
         // Update cadence label using the full Result
         CadenceDetector.Result r = detector.getLastResult();

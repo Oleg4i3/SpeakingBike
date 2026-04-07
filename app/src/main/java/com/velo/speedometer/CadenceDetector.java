@@ -104,6 +104,8 @@ public class CadenceDetector implements SensorEventListener {
 
     // Raw sample history for graph / CSV
     private final List<float[]> rawSamples = new ArrayList<>();
+    /** Cadence overlay: [elapsed_sec, rpm, stable(1=stable,0=unstable)]. Sync before iterating. */
+    private final List<float[]> cadenceHistory = new ArrayList<>();
     private long rideStartMs = -1;
 
     private Result lastResult = Result.EMPTY;
@@ -125,8 +127,9 @@ public class CadenceDetector implements SensorEventListener {
         stepCount   = 0;
         rideStartMs = System.currentTimeMillis();
         recentRpm.clear();
-        synchronized (stableHistory) { stableHistory.clear(); }
-        synchronized (rawSamples)    { rawSamples.clear(); }
+        synchronized (stableHistory)   { stableHistory.clear(); }
+        synchronized (rawSamples)      { rawSamples.clear(); }
+        synchronized (cadenceHistory)  { cadenceHistory.clear(); }
         lastResult  = Result.EMPTY;
     }
 
@@ -139,6 +142,9 @@ public class CadenceDetector implements SensorEventListener {
 
     /** Raw samples since ride start — synchronize on the returned list to iterate. */
     public List<float[]> getRawSamples() { return rawSamples; }
+
+    /** Cadence history since ride start — synchronize on the returned list to iterate. */
+    public List<float[]> getCadenceHistory() { return cadenceHistory; }
 
     // ── SensorEventListener ───────────────────────────────────────────────────
 
@@ -295,6 +301,14 @@ public class CadenceDetector implements SensorEventListener {
         }
 
         lastResult = new Result(rpm, confidence, stable, stableAvg);
+
+        // Save cadence history point for graph overlay
+        if (rideStartMs >= 0 && rpm > 0) {
+            float elapsed = (now - rideStartMs) / 1000f;
+            synchronized (cadenceHistory) {
+                cadenceHistory.add(new float[]{elapsed, rpm, stable ? 1f : 0f});
+            }
+        }
 
         if (listener != null) {
             final Result r = lastResult;
