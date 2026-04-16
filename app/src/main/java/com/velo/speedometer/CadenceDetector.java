@@ -72,8 +72,8 @@ public class CadenceDetector implements SensorEventListener {
     private static final int   SAMPLE_RATE      = 50;
     private static final int   BUFFER_SIZE      = 512;   // ~10.24 s, power of 2
     private static final int   STEP_SIZE        = 50;    // recompute every ~1 s
-    private static final float RPM_MIN          = 45f;
-    private static final float RPM_MAX          = 100f;
+    private static final float RPM_MIN          = 48f;
+    private static final float RPM_MAX          = 108f;
 
     private static final float SNR_DETECT       = 4f;
     private static final float SNR_STABLE       = 12f;
