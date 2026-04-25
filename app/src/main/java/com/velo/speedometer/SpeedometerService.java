@@ -133,7 +133,7 @@ public class SpeedometerService extends Service {
         super.onCreate();
         handler    = new Handler(Looper.getMainLooper());
         calculator = new SpeedCalculator(0.3f);
-        cadenceDetector = new CadenceDetector(this, result -> lastCadenceResult = result);
+        cadenceDetector = createCadenceDetector();
         createNotificationChannel();
         initMetronome();
         initTts();
@@ -444,6 +444,17 @@ public class SpeedometerService extends Service {
     // ═══════════════════════════════════════════════════════════════════════════
     // Metronome
     // ═══════════════════════════════════════════════════════════════════════════
+
+    /**
+     * Factory: reads cadence_sensor / cadence_method from SharedPreferences.
+     * gyro+acf (default) | gyro+spectral | accel+acf | accel+spectral
+     */
+    private CadenceDetector createCadenceDetector() {
+        SharedPreferences p = getSharedPreferences("settings", MODE_PRIVATE);
+        boolean useGyro = !"accel".equals(p.getString("cadence_sensor", "gyro"));
+        boolean useAcf  = !"spectral".equals(p.getString("cadence_method", "acf"));
+        return new CadenceDetector(this, result -> lastCadenceResult = result, useGyro, useAcf);
+    }
 
     private void initMetronome() {
         metronomeEngine = new MetronomeEngine(this);
@@ -767,6 +778,11 @@ public class SpeedometerService extends Service {
             unregisterScreenReceiver();
             if (screenAnnounceEnabled) registerScreenReceiver();
         }
+        // Пересоздаём детектор каденса если изменился сенсор или метод
+        boolean wasRunning = (state == TrackState.RUNNING);
+        cadenceDetector.stop();
+        cadenceDetector = createCadenceDetector();
+        if (wasRunning) cadenceDetector.start();
     }
 
     private void loadSettings() {
@@ -794,6 +810,10 @@ public class SpeedometerService extends Service {
 
     @Override
     public void onDestroy() {
+        stopMetronome();
+        if (metronomeEngine != null) metronomeEngine.release();
+        if (mediaSession    != null) mediaSession.release();
+        if (metWakeLock != null && metWakeLock.isHeld()) metWakeLock.release();
         super.onDestroy();
         if (state != TrackState.STOPPED) stopTracking();
         if (audioEnhancer != null) audioEnhancer.release();
