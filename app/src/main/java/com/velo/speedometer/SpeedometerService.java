@@ -29,6 +29,10 @@ import android.app.KeyguardManager;
 
 import androidx.annotation.NonNull;
 import androidx.core.app.NotificationCompat;
+import androidx.media.session.MediaButtonReceiver;
+import android.support.v4.media.session.MediaSessionCompat;
+import android.support.v4.media.session.PlaybackStateCompat;
+import androidx.media.VolumeProviderCompat;
 
 import java.util.Locale;
 
@@ -43,7 +47,8 @@ public class SpeedometerService extends Service {
     public static final String ACTION_PAUSE    = "sb.PAUSE";
     public static final String ACTION_ANNOUNCE = "sb.ANNOUNCE";
     public static final String ACTION_RELOAD   = "sb.RELOAD";
-    public static final String ACTION_RIDE_STOPPED = "sb.RIDE_STOPPED";
+    public static final String ACTION_RIDE_STOPPED     = "sb.RIDE_STOPPED";
+    public static final String ACTION_METRO_TOGGLE    = "sb.METRO_TOGGLE";
 
     private final IBinder binder = new LocalBinder();
     public class LocalBinder extends Binder {
@@ -87,6 +92,7 @@ public class SpeedometerService extends Service {
     public interface SpeedListener {
         void onSpeedUpdate(float speedKmh, float avgKmh, float distanceKm);
         void onStateChanged(TrackState state);
+        default void onMetronomeChanged(boolean playing) {}
     }
 
     private float   speedThresholdKmh;
@@ -109,13 +115,27 @@ public class SpeedometerService extends Service {
     private CadenceDetector.Result lastCadenceResult = CadenceDetector.Result.EMPTY;
     private CadenceDetector cadenceDetector;
 
+    // ── Metronome ─────────────────────────────────────────────────────────────
+    private MetronomeEngine    metronomeEngine;
+    private volatile Thread    metronomeThread;
+    private volatile boolean   metronomeRunning  = false;
+    private volatile int       metronomeBpm      = 80;
+    private int                metSoundType      = MetronomeEngine.SOUND_MARACAS;
+    private boolean            metSoundStrong    = true;
+    private boolean            metSoundWeak      = true;
+    private boolean            metVibStrong      = false;
+    private boolean            metVibWeak        = true;
+    private MediaSessionCompat mediaSession;
+    private PowerManager.WakeLock metWakeLock;
+
     @Override
     public void onCreate() {
         super.onCreate();
         handler    = new Handler(Looper.getMainLooper());
         calculator = new SpeedCalculator(0.3f);
-        cadenceDetector = createCadenceDetector();
+        cadenceDetector = new CadenceDetector(this, result -> lastCadenceResult = result);
         createNotificationChannel();
+        initMetronome();
         initTts();
     }
 
@@ -129,7 +149,8 @@ public class SpeedometerService extends Service {
             case ACTION_STOP:     stopTracking();    break;
             case ACTION_PAUSE:    togglePause();     break;
             case ACTION_ANNOUNCE: announceNow(true); break;
-            case ACTION_RELOAD:   reloadSettings();  break;
+            case ACTION_RELOAD:       reloadSettings();    break;
+            case ACTION_METRO_TOGGLE: toggleMetronome();   break;
         }
         return START_STICKY;
     }
@@ -420,23 +441,140 @@ public class SpeedometerService extends Service {
         }
     }
 
-    /**
-     * Factory — reads two settings:
-     *   "cadence_sensor"  : "gyro"  (default) | "accel"
-     *   "cadence_method"  : "acf"   (default) | "spectral"
-     *
-     * Gyro + ACF      → best for rough terrain (forest, gravel)
-     * Gyro + Spectral → comparison baseline
-     * Accel + ACF     → original sensor, correlation method
-     * Accel + Spectral→ original sensor, original method
-     */
-    private CadenceDetector createCadenceDetector() {
+    // ═══════════════════════════════════════════════════════════════════════════
+    // Metronome
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    private void initMetronome() {
+        metronomeEngine = new MetronomeEngine(this);
+        metronomeEngine.init();
+        loadMetronomePrefs();
+        setupMediaSession();
+    }
+
+    private void loadMetronomePrefs() {
         SharedPreferences p = getSharedPreferences("settings", MODE_PRIVATE);
-        String sensor = p.getString("cadence_sensor", "gyro");
-        String method = p.getString("cadence_method", "acf");
-        boolean useGyro = "gyro".equals(sensor);
-        boolean useAcf  = !"spectral".equals(method);
-        return new CadenceDetector(this, result -> lastCadenceResult = result, useGyro, useAcf);
+        metronomeBpm   = p.getInt("metro_bpm", 80);
+        metSoundType   = p.getInt("metro_sound_type", MetronomeEngine.SOUND_MARACAS);
+        metSoundStrong = p.getBoolean("metro_sound_strong", true);
+        metSoundWeak   = p.getBoolean("metro_sound_weak", true);
+        metVibStrong   = p.getBoolean("metro_vib_strong", false);
+        metVibWeak     = p.getBoolean("metro_vib_weak", true);
+        applyMetronomeParams();
+    }
+
+    private void applyMetronomeParams() {
+        if (metronomeEngine != null)
+            metronomeEngine.setParams(metSoundType, metSoundStrong, metSoundWeak, metVibStrong, metVibWeak);
+    }
+
+    /**
+     * MediaSession with VolumeProviderCompat — intercepts hardware volume keys
+     * when screen is OFF. Volume+ → toggle metronome.
+     */
+    private void setupMediaSession() {
+        PowerManager pm = (PowerManager) getSystemService(POWER_SERVICE);
+        metWakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "VeloSpeedometer::Metro");
+
+        mediaSession = new MediaSessionCompat(this, "VeloMetronome");
+
+        VolumeProviderCompat vp = new VolumeProviderCompat(
+                VolumeProviderCompat.VOLUME_CONTROL_RELATIVE, 100, 50) {
+            private long lastToggleMs = 0;
+            @Override public void onAdjustVolume(int direction) {
+                // direction: +1 = Volume Up, -1 = Volume Down
+                if (direction > 0) {
+                    long now = System.currentTimeMillis();
+                    if (now - lastToggleMs > 500) {
+                        lastToggleMs = now;
+                        toggleMetronome();
+                    }
+                }
+                // Volume Down when screen off: announce speed (same as screen-on double-tap)
+                if (direction < 0) {
+                    announceNow(true);
+                }
+            }
+        };
+
+        mediaSession.setPlaybackToRemote(vp);
+        PlaybackStateCompat state = new PlaybackStateCompat.Builder()
+                .setActions(PlaybackStateCompat.ACTION_PLAY | PlaybackStateCompat.ACTION_STOP)
+                .setState(PlaybackStateCompat.STATE_PLAYING, 0, 1.0f)
+                .build();
+        mediaSession.setPlaybackState(state);
+        mediaSession.setActive(true);
+    }
+
+    public void toggleMetronome() {
+        if (metronomeRunning) stopMetronome(); else startMetronome();
+    }
+
+    public void startMetronome() {
+        if (metronomeRunning) return;
+        metronomeRunning = true;
+        if (!metWakeLock.isHeld()) metWakeLock.acquire(2 * 60 * 60 * 1000L);
+        notifyMetronomeChanged();
+        metronomeThread = new Thread(() -> {
+            long nextTime = System.currentTimeMillis();
+            int beat = 0;
+            while (metronomeRunning) {
+                beat++;
+                boolean strong = (beat % 2 == 1);
+                metronomeEngine.beat(strong);
+                long interval = 60000L / metronomeBpm;
+                nextTime += interval;
+                long sleep = nextTime - System.currentTimeMillis();
+                if (sleep > 0) {
+                    try { Thread.sleep(sleep); } catch (InterruptedException ignored) {}
+                } else {
+                    nextTime = System.currentTimeMillis();
+                }
+            }
+        });
+        metronomeThread.setDaemon(true);
+        metronomeThread.start();
+    }
+
+    public void stopMetronome() {
+        metronomeRunning = false;
+        if (metronomeThread != null) { metronomeThread.interrupt(); metronomeThread = null; }
+        if (metWakeLock != null && metWakeLock.isHeld()) metWakeLock.release();
+        notifyMetronomeChanged();
+    }
+
+    public boolean isMetronomePlaying() { return metronomeRunning; }
+
+    public int getMetronomeBpm() { return metronomeBpm; }
+
+    public void setMetronomeBpm(int bpm) {
+        metronomeBpm = Math.max(40, Math.min(180, bpm));
+        getSharedPreferences("settings", MODE_PRIVATE).edit()
+                .putInt("metro_bpm", metronomeBpm).apply();
+        // BPM change is picked up on next beat interval naturally
+    }
+
+    public void setMetronomeParams(int soundType, boolean ss, boolean sw, boolean vs, boolean vw) {
+        metSoundType = soundType; metSoundStrong = ss; metSoundWeak = sw;
+        metVibStrong = vs; metVibWeak = vw;
+        applyMetronomeParams();
+        getSharedPreferences("settings", MODE_PRIVATE).edit()
+                .putInt("metro_sound_type", soundType)
+                .putBoolean("metro_sound_strong", ss)
+                .putBoolean("metro_sound_weak", sw)
+                .putBoolean("metro_vib_strong", vs)
+                .putBoolean("metro_vib_weak", vw).apply();
+    }
+
+    public int  getMetSoundType()   { return metSoundType; }
+    public boolean isMetSoundStrong(){ return metSoundStrong; }
+    public boolean isMetSoundWeak()  { return metSoundWeak; }
+    public boolean isMetVibStrong()  { return metVibStrong; }
+    public boolean isMetVibWeak()    { return metVibWeak; }
+
+    /** Called when metronome start/stop changes — inform UI. */
+    private void notifyMetronomeChanged() {
+        handler.post(() -> { if (listener != null) listener.onMetronomeChanged(metronomeRunning); });
     }
 
     private void initTts() {
@@ -629,11 +767,6 @@ public class SpeedometerService extends Service {
             unregisterScreenReceiver();
             if (screenAnnounceEnabled) registerScreenReceiver();
         }
-        // Пересоздаём детектор если изменился сенсор или метод
-        boolean wasRunning = (state == TrackState.RUNNING);
-        cadenceDetector.stop();
-        cadenceDetector = createCadenceDetector();
-        if (wasRunning) cadenceDetector.start();
     }
 
     private void loadSettings() {
