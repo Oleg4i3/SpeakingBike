@@ -120,6 +120,17 @@ public class CadenceDetector implements SensorEventListener {
     // IIR filter state
     private float lpfX = 0f, lpfY = 0f, lpfZ = 0f;
 
+    // ── Adaptive sample-rate measurement ─────────────────────────────────────
+    // event.timestamp is nanoseconds from a monotonic clock. We compute the
+    // per-sample interval via EMA and derive the true Hz. This corrects the
+    // systematic ~15 RPM under-read that appears when the hardware delivers
+    // ~60-62 Hz on SENSOR_DELAY_GAME instead of the nominal 50 Hz.
+    private static final float SR_EMA_ALPHA   = 0.02f;  // slow: stable after ~150 samples
+    private static final float SR_MIN         = 30f;    // sanity guard (Hz)
+    private static final float SR_MAX         = 200f;   // sanity guard (Hz)
+    private long  lastEventNanos     = 0L;
+    private float measuredSampleRate = SAMPLE_RATE;     // Hz, updated on every sample
+
     // Temporal stability
     private final Deque<Float>  recentRpm     = new ArrayDeque<>(TEMPORAL_N + 1);
     private final Deque<long[]> stableHistory = new ArrayDeque<>();
@@ -167,6 +178,8 @@ public class CadenceDetector implements SensorEventListener {
 
         head = 0; filled = 0; stepCount = 0;
         lpfX = 0f; lpfY = 0f; lpfZ = 0f;
+        lastEventNanos     = 0L;
+        measuredSampleRate = SAMPLE_RATE;
         rideStartMs = extRideStartMs;   // ← use external timestamp (FIX bug 1+2)
         recentRpm.clear();
         synchronized (stableHistory)  { stableHistory.clear(); }
@@ -197,6 +210,26 @@ public class CadenceDetector implements SensorEventListener {
 
     @Override
     public void onSensorChanged(SensorEvent event) {
+        // ── Measure actual hardware sample rate ───────────────────────────────
+        // event.timestamp is nanoseconds (CLOCK_BOOTTIME or CLOCK_MONOTONIC).
+        // A single-sample EMA converges to true Hz within a few seconds and
+        // removes the systematic RPM bias caused by hardware over-delivering
+        // samples (e.g. 60 Hz on a device configured for SENSOR_DELAY_GAME).
+        final long ts = event.timestamp;
+        if (lastEventNanos > 0L) {
+            long dtNs = ts - lastEventNanos;
+            // Accept 2 ms … 200 ms (5 Hz … 500 Hz) — anything outside is a glitch
+            if (dtNs > 2_000_000L && dtNs < 200_000_000L) {
+                float sampleHz = 1_000_000_000f / dtNs;
+                measuredSampleRate = SR_EMA_ALPHA * sampleHz
+                                   + (1f - SR_EMA_ALPHA) * measuredSampleRate;
+                // Hard clamp — never let a single glitch corrupt the estimator
+                if (measuredSampleRate < SR_MIN) measuredSampleRate = SR_MIN;
+                if (measuredSampleRate > SR_MAX) measuredSampleRate = SR_MAX;
+            }
+        }
+        lastEventNanos = ts;
+
         float rx = event.values[0], ry = event.values[1], rz = event.values[2];
 
         // Per-axis IIR LPF (fc ≈ 6 Hz)
@@ -299,10 +332,11 @@ public class CadenceDetector implements SensorEventListener {
         if (energy < 1e-9f) { publish(0f, 0f, false); return; }
 
         // Lag range:
-        //   lagMin = ceil(60/RPM_MAX * SAMPLE_RATE) = 28  (108 RPM)
-        //   lagMax = floor(60/RPM_MIN * SAMPLE_RATE) = 62  (48 RPM)
-        final int lagMin   = (int) Math.ceil (60f / RPM_MAX * SAMPLE_RATE);
-        final int lagMax   = (int) Math.floor(60f / RPM_MIN * SAMPLE_RATE);
+        //   lagMin = ceil(60/RPM_MAX * sr)  — shortest period at highest cadence
+        //   lagMax = floor(60/RPM_MIN * sr) — longest period at lowest cadence
+        final float sr     = measuredSampleRate;          // true Hz (adaptive)
+        final int lagMin   = (int) Math.ceil (60f / RPM_MAX * sr);
+        final int lagMax   = (int) Math.floor(60f / RPM_MIN * sr);
         final int lagCheck = lagMax * 2;  // for second-period criterion
 
         float[] acf = new float[lagCheck + 1];
@@ -329,7 +363,7 @@ public class CadenceDetector implements SensorEventListener {
                 refinedLag = peakLag - (y2-y0) / denom;
         }
 
-        float rpm = Math.max(RPM_MIN, Math.min(RPM_MAX, 60f * SAMPLE_RATE / refinedLag));
+        float rpm = Math.max(RPM_MIN, Math.min(RPM_MAX, 60f * sr / refinedLag));
 
         boolean acfPass = peakAcf >= ACF_STABLE;
 
@@ -348,8 +382,9 @@ public class CadenceDetector implements SensorEventListener {
     private void processSpectral(float[] signal) {
         float[] power = fft(signal);
 
-        int kMin = (int) Math.ceil (RPM_MIN / 60f * BUFFER_SIZE / SAMPLE_RATE);
-        int kMax = (int) Math.floor(RPM_MAX / 60f * BUFFER_SIZE / SAMPLE_RATE);
+        final float sr = measuredSampleRate;              // true Hz (adaptive)
+        int kMin = (int) Math.ceil (RPM_MIN / 60f * BUFFER_SIZE / sr);
+        int kMax = (int) Math.floor(RPM_MAX / 60f * BUFFER_SIZE / sr);
 
         int   peakK = kMin; float peakPow = 0f;
         for (int k = kMin; k <= kMax; k++)
@@ -374,7 +409,7 @@ public class CadenceDetector implements SensorEventListener {
         // Sub-harmonic guard: if f/2 is in-band and significant → we saw 2× cadence
         float refinedHalf = refined / 2f;
         int   kHalf       = Math.round(refinedHalf);
-        float rpmHalf     = refinedHalf * SAMPLE_RATE / BUFFER_SIZE * 60f;
+        float rpmHalf     = refinedHalf * sr / BUFFER_SIZE * 60f;
         if (kHalf >= 1 && kHalf < BUFFER_SIZE/2
                 && rpmHalf >= RPM_MIN && rpmHalf <= RPM_MAX
                 && power[kHalf] > noise * SUBHARMONIC_SNR) {
@@ -382,7 +417,7 @@ public class CadenceDetector implements SensorEventListener {
         }
 
         float rpm = Math.max(RPM_MIN, Math.min(RPM_MAX,
-                refined * SAMPLE_RATE / BUFFER_SIZE * 60f));
+                refined * sr / BUFFER_SIZE * 60f));
 
         boolean snrPass = snr >= SNR_STABLE;
 
